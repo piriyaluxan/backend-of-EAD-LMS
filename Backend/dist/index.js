@@ -23,7 +23,7 @@ const dashboard_1 = __importDefault(require("./routes/dashboard"));
 const registrations_1 = __importDefault(require("./routes/registrations"));
 dotenv_1.default.config({ path: path_1.default.join(process.cwd(), "config.env") });
 const app = (0, express_1.default)();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5000;
 (0, database_1.connectDB)();
 const ensureDefaultUsers = async () => {
     try {
