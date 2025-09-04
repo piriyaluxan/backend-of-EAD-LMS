@@ -229,35 +229,46 @@ const initializeSystem = async () => {
 initializeSystem();
 
 // CORS configuration
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      const allowed = process.env.CORS_ORIGIN?.split(",") || [
-        "http://localhost:3000",
-        "http://localhost:5173",
-      ];
-      if (!origin) return callback(null, true);
-      if (
-        origin.startsWith("http://localhost") ||
-        origin.startsWith("https://localhost")
-      ) {
-        return callback(null, true);
-      }
-      // Allow common private LAN ranges in development
-      const isLan =
-        /^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(origin);
-      if (process.env.NODE_ENV !== "production" && isLan) {
-        return callback(null, true);
-      }
-      if (allowed.includes(origin)) return callback(null, true);
-      return callback(new Error(`CORS: Origin ${origin} not allowed`));
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    optionsSuccessStatus: 204,
-  })
-);
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    // Wildcard support via env
+    const envOrigin = process.env.CORS_ORIGIN?.trim();
+    if (envOrigin === "*") {
+      return callback(null, true);
+    }
+
+    const allowed = (envOrigin ? envOrigin.split(",") : [
+      "http://localhost:3000",
+      "http://localhost:5173",
+      "http://localhost:8081",
+    ]).map(o => o.trim());
+
+    if (!origin) return callback(null, true);
+    if (
+      origin.startsWith("http://localhost") ||
+      origin.startsWith("https://localhost")
+    ) {
+      return callback(null, true);
+    }
+
+    // Allow common private LAN ranges in development
+    const isLan = /^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(origin);
+    if (process.env.NODE_ENV !== "production" && isLan) {
+      return callback(null, true);
+    }
+
+    if (allowed.includes(origin)) return callback(null, true);
+    return callback(new Error(`CORS: Origin ${origin} not allowed`));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  optionsSuccessStatus: 204,
+  preflightContinue: false,
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 // Body parsing middleware
 app.use(express.json({ limit: "10mb" }));
@@ -274,6 +285,11 @@ app.get("/health", (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
   });
+});
+
+// Root endpoint for platform health checks (e.g., Railway)
+app.get("/", (req, res) => {
+  res.send("Hello from Railway backend!");
 });
 
 // API routes
