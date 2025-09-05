@@ -1,11 +1,18 @@
 {
   "version": 2,
   "builds": [
-    { "src": "dist/index.js", "use": "@vercel/node" }
+    { "src": "api/index.js", "use": "@vercel/node" }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "dist/index.js" }
-  ]
+    { "src": "/(.*)", "dest": "api/index.js" }
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "CORS_ORIGIN": "*",
+    "JWT_SECRET": "ead-lms-super-secret-jwt-key-2024",
+    "JWT_EXPIRE": "7d",
+    "BCRYPT_ROUNDS": "12"
+  }
 }
 
 

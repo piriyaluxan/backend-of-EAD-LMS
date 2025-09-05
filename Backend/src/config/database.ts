@@ -2,6 +2,12 @@ import mongoose from "mongoose";
 
 export const connectDB = async (): Promise<void> => {
   try {
+    // Skip connection if already connected
+    if (mongoose.connection.readyState === 1) {
+      console.log('📦 MongoDB already connected');
+      return;
+    }
+
     const uri = process.env.MONGO_URI || "mongodb://localhost:27017/ead-lms";
 
     // MongoDB Atlas connection options with Stable API version
@@ -15,12 +21,16 @@ export const connectDB = async (): Promise<void> => {
       autoCreate: true,
       // Create indexes automatically
       autoIndex: true,
-      // Set maximum pool size
-      maxPoolSize: 10,
+      // Set maximum pool size (reduced for serverless)
+      maxPoolSize: process.env.NODE_ENV === 'production' ? 5 : 10,
       // Server selection timeout
       serverSelectionTimeoutMS: 5000,
       // Socket timeout
       socketTimeoutMS: 45000,
+      // Buffer commands for serverless
+      bufferCommands: false,
+      // Buffer max entries
+      bufferMaxEntries: 0,
     };
 
     console.log('🔄 Connecting to MongoDB Atlas...');

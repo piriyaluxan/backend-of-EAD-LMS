@@ -25,8 +25,10 @@ dotenv.config({ path: path.join(process.cwd(), "config.env") });
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Connect to MongoDB
-connectDB();
+// Connect to MongoDB (only if not in serverless environment)
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  connectDB();
+}
 
 // Ensure default users exist
 const ensureDefaultUsers = async () => {
@@ -307,13 +309,15 @@ app.use("/api/registrations", registrationRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV}`);
-  console.log(`🔗 Health check: http://localhost:${PORT}/health`);
-  console.log(`📚 API Documentation: http://localhost:${PORT}/api`);
-});
+// Start server (only if not in serverless environment)
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📊 Environment: ${process.env.NODE_ENV}`);
+    console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+    console.log(`📚 API Documentation: http://localhost:${PORT}/api`);
+  });
+}
 
 // Graceful shutdown
 process.on("SIGTERM", () => {
