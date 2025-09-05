@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const path = require('path');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 // Create Express app
 const app = express();
@@ -97,6 +99,82 @@ try {
   app.use('/api/registrations', registrationRoutes);
 } catch (error) {
   console.error('Error loading routes:', error);
+}
+
+// Fallback inline auth routes if compiled routes aren't available in the deployment bundle
+// Minimal User model definition for login/debug
+try {
+  const userSchema = new mongoose.Schema({
+    firstName: String,
+    lastName: String,
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    password: { type: String, select: true },
+    role: { type: String, enum: ['admin', 'student', 'instructor'], required: true },
+    studentId: String,
+    isActive: { type: Boolean, default: true },
+  }, { timestamps: true });
+
+  // Password comparison helper
+  userSchema.methods.comparePassword = async function(candidate) {
+    if (!this.password) return false;
+    return bcrypt.compare(candidate, this.password);
+  };
+
+  const User = mongoose.models.User || mongoose.model('User', userSchema);
+
+  // POST /api/auth/login
+  app.post('/api/auth/login', async (req, res) => {
+    try {
+      const { email, password, role } = req.body || {};
+      if (!email || !password || !role) {
+        res.status(400).json({ success: false, error: 'email, password and role are required' });
+        return;
+      }
+
+      const user = await User.findOne({ email: String(email).toLowerCase().trim(), role }).select('+password');
+      if (!user) {
+        res.status(401).json({ success: false, error: 'Invalid credentials' });
+        return;
+      }
+
+      const isMatch = await user.comparePassword(password);
+      if (!isMatch) {
+        res.status(401).json({ success: false, error: 'Invalid credentials' });
+        return;
+      }
+
+      const token = jwt.sign({ id: user._id.toString() }, process.env.JWT_SECRET || 'fallback-secret-key', { expiresIn: process.env.JWT_EXPIRE || '7d' });
+
+      res.json({
+        success: true,
+        token,
+        user: {
+          id: user._id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          role: user.role,
+          studentId: user.studentId,
+        }
+      });
+    } catch (err) {
+      console.error('Login error:', err);
+      res.status(500).json({ success: false, error: 'Server error' });
+    }
+  });
+
+  // GET /api/auth/debug/users
+  app.get('/api/auth/debug/users', async (req, res) => {
+    try {
+      const users = await User.find({}, { password: 0 }).lean();
+      res.json({ success: true, count: users.length, users });
+    } catch (err) {
+      res.status(500).json({ success: false, error: 'Server error' });
+    }
+  });
+} catch (e) {
+  // If anything above fails, we still have /health and /api/ping working
+  console.error('Inline auth fallback setup failed:', e);
 }
 
 // Error handling middleware
