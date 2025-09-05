@@ -27,10 +27,8 @@ export const connectDB = async (): Promise<void> => {
       serverSelectionTimeoutMS: 5000,
       // Socket timeout
       socketTimeoutMS: 45000,
-      // Buffer commands for serverless
+      // Disable command buffering in serverless contexts
       bufferCommands: false,
-      // Buffer max entries
-      bufferMaxEntries: 0,
     };
 
     console.log('🔄 Connecting to MongoDB Atlas...');

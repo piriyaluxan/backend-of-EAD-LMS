@@ -26,9 +26,18 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Connect to MongoDB (only if not in serverless environment)
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
-  connectDB();
-}
+const startApp = async () => {
+  try {
+    if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+      await connectDB();
+    }
+
+    // Initialize default users and sample data after DB is connected
+    await initializeSystem();
+  } catch (err) {
+    console.error('❌ Startup failed:', err);
+  }
+};
 
 // Ensure default users exist
 const ensureDefaultUsers = async () => {
@@ -228,7 +237,8 @@ const initializeSystem = async () => {
   }
 };
 
-initializeSystem();
+// Remove eager call; initialize happens in startApp after DB connect
+// initializeSystem();
 
 // CORS configuration
 const corsOptions: cors.CorsOptions = {
@@ -317,6 +327,8 @@ if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
     console.log(`🔗 Health check: http://localhost:${PORT}/health`);
     console.log(`📚 API Documentation: http://localhost:${PORT}/api`);
   });
+  // Kick off startup tasks
+  startApp();
 }
 
 // Graceful shutdown
