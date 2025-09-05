@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const User_1 = require("../models/User");
 const auth_1 = require("../middleware/auth");
+const Course_1 = require("../models/Course");
 const router = express_1.default.Router();
 router.get("/students", auth_1.protect, (0, auth_1.authorize)("instructor"), async (req, res) => {
     try {
@@ -169,6 +170,33 @@ router.patch("/:id/status", auth_1.protect, (0, auth_1.authorize)("admin"), asyn
             return;
         }
         res.json({ success: true, data: user });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, error: "Server error" });
+    }
+});
+router.patch("/:id/instructor-courses", auth_1.protect, (0, auth_1.authorize)("admin"), async (req, res) => {
+    try {
+        const instructorId = req.params.id;
+        const { courseIds } = req.body;
+        const instructor = await User_1.User.findById(instructorId);
+        if (!instructor || instructor.role !== "instructor") {
+            res
+                .status(404)
+                .json({ success: false, error: "Instructor not found" });
+            return;
+        }
+        const courses = await Course_1.Course.find({ _id: { $in: courseIds || [] } });
+        if ((courseIds || []).length !== courses.length) {
+            res
+                .status(400)
+                .json({ success: false, error: "One or more courses invalid" });
+            return;
+        }
+        await Course_1.Course.updateMany({ instructor: instructorId, _id: { $nin: courseIds || [] } }, { $set: { instructor: instructorId } });
+        await Course_1.Course.updateMany({ _id: { $in: courseIds || [] } }, { $set: { instructor: instructorId } });
+        const updated = await Course_1.Course.find({ instructor: instructorId }).select("title code instructor");
+        res.json({ success: true, data: updated });
     }
     catch (error) {
         res.status(500).json({ success: false, error: "Server error" });

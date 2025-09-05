@@ -46,7 +46,7 @@ router.post("/login", [
             return;
         }
         console.log(`User found: ${user.email}, role: ${user.role}, hasPassword: ${!!user.password}`);
-        if (role === "student" && !user.password) {
+        if ((role === "student" || role === "instructor") && !user.password) {
             res.status(401).json({
                 success: false,
                 error: "Password not set",
@@ -111,11 +111,11 @@ router.post("/set-password", [
             return;
         }
         const { email, newPassword } = req.body;
-        const user = await User_1.User.findOne({ email, role: "student" });
+        const user = await User_1.User.findOne({ email, role: { $in: ["student", "instructor"] } });
         if (!user) {
             res.status(404).json({
                 success: false,
-                error: "Student not found",
+                error: "User not found",
             });
             return;
         }

@@ -137,6 +137,55 @@ router.post("/", auth_1.protect, (0, auth_1.authorize)("admin", "instructor"), u
             .json({ success: false, error: error.message || "Server error" });
     }
 });
+router.put("/:id", auth_1.protect, (0, auth_1.authorize)("admin", "instructor"), upload.single("file"), async (req, res) => {
+    try {
+        const { title, description, courseId, dueDate } = req.body;
+        const assignmentId = req.params.id;
+        if (!title || !courseId) {
+            res
+                .status(400)
+                .json({ success: false, error: "Missing required fields" });
+            return;
+        }
+        const updateData = {
+            title,
+            description,
+            course: courseId,
+            dueDate: dueDate ? new Date(dueDate) : undefined,
+        };
+        if (req.file) {
+            updateData.attachmentUrl = `/uploads/${req.file.filename}`;
+            updateData.attachmentName = req.file.originalname;
+        }
+        const assignment = await Assignment_1.Assignment.findByIdAndUpdate(assignmentId, updateData, { new: true }).populate("createdBy", "firstName lastName");
+        if (!assignment) {
+            res.status(404).json({ success: false, error: "Assignment not found" });
+            return;
+        }
+        res.json({ success: true, data: assignment });
+    }
+    catch (error) {
+        res
+            .status(500)
+            .json({ success: false, error: error.message || "Server error" });
+    }
+});
+router.delete("/:id", auth_1.protect, (0, auth_1.authorize)("admin", "instructor"), async (req, res) => {
+    try {
+        const assignmentId = req.params.id;
+        const assignment = await Assignment_1.Assignment.findByIdAndDelete(assignmentId);
+        if (!assignment) {
+            res.status(404).json({ success: false, error: "Assignment not found" });
+            return;
+        }
+        res.json({ success: true, message: "Assignment deleted successfully" });
+    }
+    catch (error) {
+        res
+            .status(500)
+            .json({ success: false, error: error.message || "Server error" });
+    }
+});
 router.post("/:id/submissions", auth_1.protect, upload.single("file"), async (req, res) => {
     try {
         if (!req.file) {
@@ -192,6 +241,33 @@ router.get("/:assignmentId/submissions/:submissionId/download", auth_1.protect, 
         }
         const filePath = path_1.default.join(uploadDir, submission.fileName);
         res.download(filePath, submission.originalName);
+    }
+    catch (error) {
+        res.status(500).json({ success: false, error: "Server error" });
+    }
+});
+router.patch("/:assignmentId/submissions/:submissionId", auth_1.protect, (0, auth_1.authorize)("admin", "instructor"), async (req, res) => {
+    try {
+        const { grade, remarks } = req.body;
+        const submission = await Submission_1.Submission.findByIdAndUpdate(req.params.submissionId, { grade, remarks }, { new: true }).populate("student", "firstName lastName email studentId");
+        if (!submission) {
+            res.status(404).json({ success: false, error: "Submission not found" });
+            return;
+        }
+        res.json({ success: true, data: submission });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, error: "Server error" });
+    }
+});
+router.delete("/:assignmentId/submissions/:submissionId", auth_1.protect, (0, auth_1.authorize)("admin"), async (req, res) => {
+    try {
+        const submission = await Submission_1.Submission.findByIdAndDelete(req.params.submissionId);
+        if (!submission) {
+            res.status(404).json({ success: false, error: "Submission not found" });
+            return;
+        }
+        res.json({ success: true, message: "Submission deleted" });
     }
     catch (error) {
         res.status(500).json({ success: false, error: "Server error" });
