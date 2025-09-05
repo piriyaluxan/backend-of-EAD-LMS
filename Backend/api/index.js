@@ -172,6 +172,61 @@ try {
       res.status(500).json({ success: false, error: 'Server error' });
     }
   });
+
+  // POST /api/auth/seed - create default admin, instructor, and student
+  app.post('/api/auth/seed', async (req, res) => {
+    try {
+      const defaults = [
+        {
+          email: process.env.ADMIN_EMAIL || 'admin@university.edu',
+          firstName: 'Admin',
+          lastName: 'User',
+          role: 'admin',
+          password: process.env.ADMIN_PASSWORD || 'password123',
+        },
+        {
+          email: 'instructor@university.edu',
+          firstName: 'Dr. Smith',
+          lastName: 'Instructor',
+          role: 'instructor',
+          password: 'password123',
+        },
+        {
+          email: 'student@university.edu',
+          firstName: 'John',
+          lastName: 'Student',
+          role: 'student',
+          studentId: 'STU001',
+          password: 'password123',
+        },
+      ];
+
+      const results = [];
+      for (const d of defaults) {
+        const existing = await User.findOne({ email: d.email, role: d.role });
+        if (existing) {
+          results.push({ email: d.email, role: d.role, status: 'exists' });
+          continue;
+        }
+        const hash = await bcrypt.hash(d.password, Number(process.env.BCRYPT_ROUNDS || 12));
+        const created = await User.create({
+          email: d.email,
+          firstName: d.firstName,
+          lastName: d.lastName,
+          role: d.role,
+          studentId: d.studentId,
+          password: hash,
+          isActive: true,
+        });
+        results.push({ email: created.email, role: created.role, status: 'created' });
+      }
+
+      res.json({ success: true, results });
+    } catch (err) {
+      console.error('Seed error:', err);
+      res.status(500).json({ success: false, error: 'Server error' });
+    }
+  });
 } catch (e) {
   // If anything above fails, we still have /health and /api/ping working
   console.error('Inline auth fallback setup failed:', e);
