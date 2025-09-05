@@ -2,6 +2,7 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const path = require('path');
 
 // Create Express app
 const app = express();
@@ -32,6 +33,11 @@ app.get('/health', (req, res) => {
 // Root endpoint
 app.get('/', (req, res) => {
   res.send('Hello from Railway backend!');
+});
+
+// Quick ping (helps verify routing in Postman)
+app.get('/api/ping', (req, res) => {
+  res.status(200).json({ ok: true, message: 'pong' });
 });
 
 // Connect to MongoDB
@@ -68,15 +74,16 @@ connectDB();
 
 // Import and use routes
 try {
-  const authRoutes = require('../dist/routes/auth.js').default;
-  const userRoutes = require('../dist/routes/users.js').default;
-  const courseRoutes = require('../dist/routes/courses.js').default;
-  const enrollmentRoutes = require('../dist/routes/enrollments.js').default;
-  const materialRoutes = require('../dist/routes/materials.js').default;
-  const assignmentRoutes = require('../dist/routes/assignments.js').default;
-  const resultRoutes = require('../dist/routes/results.js').default;
-  const dashboardRoutes = require('../dist/routes/dashboard.js').default;
-  const registrationRoutes = require('../dist/routes/registrations.js').default;
+  const distRoot = path.join(__dirname, '..', 'dist', 'routes');
+  const authRoutes = require(path.join(distRoot, 'auth.js')).default;
+  const userRoutes = require(path.join(distRoot, 'users.js')).default;
+  const courseRoutes = require(path.join(distRoot, 'courses.js')).default;
+  const enrollmentRoutes = require(path.join(distRoot, 'enrollments.js')).default;
+  const materialRoutes = require(path.join(distRoot, 'materials.js')).default;
+  const assignmentRoutes = require(path.join(distRoot, 'assignments.js')).default;
+  const resultRoutes = require(path.join(distRoot, 'results.js')).default;
+  const dashboardRoutes = require(path.join(distRoot, 'dashboard.js')).default;
+  const registrationRoutes = require(path.join(distRoot, 'registrations.js')).default;
 
   // API routes
   app.use('/api/auth', authRoutes);
