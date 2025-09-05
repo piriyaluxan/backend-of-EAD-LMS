@@ -73,6 +73,13 @@ const connectDB = async () => {
 // Initialize database connection
 connectDB();
 
+// Helper to ensure DB is connected before handling requests
+const ensureConnected = async () => {
+  if (mongoose.connection.readyState !== 1) {
+    await connectDB();
+  }
+};
+
 // Import and use routes
 try {
   const distRoot = path.join(__dirname, '..', 'dist', 'routes');
@@ -124,6 +131,7 @@ try {
   // POST /api/auth/login
   app.post('/api/auth/login', async (req, res) => {
     try {
+      await ensureConnected();
       const { email, password, role } = req.body || {};
       if (!email || !password || !role) {
         res.status(400).json({ success: false, error: 'email, password and role are required' });
@@ -165,6 +173,7 @@ try {
   // GET /api/auth/debug/users
   app.get('/api/auth/debug/users', async (req, res) => {
     try {
+      await ensureConnected();
       const users = await User.find({}, { password: 0 }).lean();
       res.json({ success: true, count: users.length, users });
     } catch (err) {
@@ -175,6 +184,7 @@ try {
   // POST /api/auth/seed - create default admin, instructor, and student
   app.post('/api/auth/seed', async (req, res) => {
     try {
+      await ensureConnected();
       const defaults = [
         {
           email: process.env.ADMIN_EMAIL || 'admin@university.edu',
@@ -230,6 +240,23 @@ try {
   // If anything above fails, we still have /health and /api/ping working
   console.error('Inline auth fallback setup failed:', e);
 }
+
+// DB status diagnostic
+app.get('/api/db-status', async (req, res) => {
+  try {
+    const state = mongoose.connection.readyState; // 0=disconnected,1=connected,2=connecting,3=disconnecting
+    const dbName = mongoose.connection.name;
+    const host = mongoose.connection.host;
+    res.json({
+      success: true,
+      readyState: state,
+      host,
+      dbName,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'status-failed' });
+  }
+});
 
 // Error handling middleware
 app.use((req, res) => {
