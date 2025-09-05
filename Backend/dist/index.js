@@ -203,13 +203,13 @@ initializeSystem();
 app.use((0, cors_1.default)({
     origin: (origin, callback) => {
         const allowed = process.env.CORS_ORIGIN?.split(",") || [
-            "http://localhost:3000",
-            "http://localhost:5173",
+            "https://frontend-of-ead-lms.vercel.app",
+            "https://frontend-of-ead-lms.vercel.app",
         ];
         if (!origin)
             return callback(null, true);
-        if (origin.startsWith("http://localhost") ||
-            origin.startsWith("https://localhost")) {
+        if (origin.startsWith("https://frontend-of-ead-lms.vercel.app") ||
+            origin.startsWith("https://frontend-of-ead-lms.vercel.app")) {
             return callback(null, true);
         }
         const isLan = /^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(origin);
