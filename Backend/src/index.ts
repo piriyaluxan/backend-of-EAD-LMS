@@ -23,7 +23,7 @@ import registrationRoutes from "./routes/registrations";
 dotenv.config({ path: path.join(process.cwd(), "config.env") });
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Connect to MongoDB (only if not in serverless environment)
 const startApp = async () => {
@@ -342,4 +342,4 @@ process.on("SIGINT", () => {
   process.exit(0);
 });
 
-export default app;
+module.exports = app;
