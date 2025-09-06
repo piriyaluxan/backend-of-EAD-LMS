@@ -80,31 +80,23 @@ const ensureConnected = async () => {
   }
 };
 
-// Import and use routes
+
+// Import and use routes from dist/routes (production/serverless safe)
+let routesLoaded = false;
 try {
   const distRoot = path.join(__dirname, '..', 'dist', 'routes');
-  const authRoutes = require(path.join(distRoot, 'auth.js')).default;
-  const userRoutes = require(path.join(distRoot, 'users.js')).default;
-  const courseRoutes = require(path.join(distRoot, 'courses.js')).default;
-  const enrollmentRoutes = require(path.join(distRoot, 'enrollments.js')).default;
-  const materialRoutes = require(path.join(distRoot, 'materials.js')).default;
-  const assignmentRoutes = require(path.join(distRoot, 'assignments.js')).default;
-  const resultRoutes = require(path.join(distRoot, 'results.js')).default;
-  const dashboardRoutes = require(path.join(distRoot, 'dashboard.js')).default;
-  const registrationRoutes = require(path.join(distRoot, 'registrations.js')).default;
-
-  // API routes
-  app.use('/api/auth', authRoutes);
-  app.use('/api/users', userRoutes);
-  app.use('/api/courses', courseRoutes);
-  app.use('/api/enrollments', enrollmentRoutes);
-  app.use('/api/materials', materialRoutes);
-  app.use('/api/assignments', assignmentRoutes);
-  app.use('/api/results', resultRoutes);
-  app.use('/api/dashboard', dashboardRoutes);
-  app.use('/api/registrations', registrationRoutes);
-} catch (error) {
-  console.error('Error loading routes:', error);
+  app.use('/api/auth', require(path.join(distRoot, 'auth.js')));
+  app.use('/api/users', require(path.join(distRoot, 'users.js')));
+  app.use('/api/courses', require(path.join(distRoot, 'courses.js')));
+  app.use('/api/enrollments', require(path.join(distRoot, 'enrollments.js')));
+  app.use('/api/materials', require(path.join(distRoot, 'materials.js')));
+  app.use('/api/assignments', require(path.join(distRoot, 'assignments.js')));
+  app.use('/api/results', require(path.join(distRoot, 'results.js')));
+  app.use('/api/dashboard', require(path.join(distRoot, 'dashboard.js')));
+  app.use('/api/registrations', require(path.join(distRoot, 'registrations.js')));
+  routesLoaded = true;
+} catch (err) {
+  console.warn('No route files found in dist/routes, using inline auth fallback.');
 }
 
 // Fallback inline auth routes if compiled routes aren't available in the deployment bundle
