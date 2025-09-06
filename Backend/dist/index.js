@@ -23,18 +23,8 @@ const dashboard_1 = __importDefault(require("./routes/dashboard"));
 const registrations_1 = __importDefault(require("./routes/registrations"));
 dotenv_1.default.config({ path: path_1.default.join(process.cwd(), "config.env") });
 const app = (0, express_1.default)();
-const PORT = process.env.PORT || 5000;
-const startApp = async () => {
-    try {
-        if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
-            await (0, database_1.connectDB)();
-        }
-        await initializeSystem();
-    }
-    catch (err) {
-        console.error('❌ Startup failed:', err);
-    }
-};
+const PORT = process.env.PORT;
+(0, database_1.connectDB)();
 const ensureDefaultUsers = async () => {
     try {
         const adminEmail = process.env.ADMIN_EMAIL || "admin@university.edu";
@@ -209,21 +199,17 @@ const initializeSystem = async () => {
         console.error("❌ System initialization failed:", error);
     }
 };
-const corsOptions = {
+initializeSystem();
+app.use((0, cors_1.default)({
     origin: (origin, callback) => {
-        const envOrigin = process.env.CORS_ORIGIN?.trim();
-        if (envOrigin === "*") {
-            return callback(null, true);
-        }
-        const allowed = (envOrigin ? envOrigin.split(",") : [
-            "http://localhost:3000",
-            "http://localhost:5173",
-            "http://localhost:8081",
-        ]).map(o => o.trim());
+        const allowed = process.env.CORS_ORIGIN?.split(",") || [
+            "https://frontend-of-ead-lms.vercel.app",
+            "https://frontend-of-ead-lms.vercel.app",
+        ];
         if (!origin)
             return callback(null, true);
-        if (origin.startsWith("http://localhost") ||
-            origin.startsWith("https://localhost")) {
+        if (origin.startsWith("https://frontend-of-ead-lms.vercel.app") ||
+            origin.startsWith("https://frontend-of-ead-lms.vercel.app")) {
             return callback(null, true);
         }
         const isLan = /^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(origin);
@@ -236,12 +222,9 @@ const corsOptions = {
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     optionsSuccessStatus: 204,
-    preflightContinue: false,
-};
-app.use((0, cors_1.default)(corsOptions));
-app.options("*", (0, cors_1.default)(corsOptions));
+}));
 app.use(express_1.default.json({ limit: "10mb" }));
 app.use(express_1.default.urlencoded({ extended: true, limit: "10mb" }));
 app.use("/uploads", express_1.default.static(path_1.default.join(process.cwd(), "uploads")));
@@ -252,9 +235,6 @@ app.get("/health", (req, res) => {
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV,
     });
-});
-app.get("/", (req, res) => {
-    res.send("Hello from Railway backend!");
 });
 app.use("/api/auth", auth_1.default);
 app.use("/api/users", users_1.default);
@@ -267,15 +247,12 @@ app.use("/api/dashboard", dashboard_1.default);
 app.use("/api/registrations", registrations_1.default);
 app.use(notFound_1.notFound);
 app.use(errorHandler_1.errorHandler);
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
-    app.listen(PORT, () => {
-        console.log(`🚀 Server running on port ${PORT}`);
-        console.log(`📊 Environment: ${process.env.NODE_ENV}`);
-        console.log(`🔗 Health check: http://localhost:${PORT}/health`);
-        console.log(`📚 API Documentation: http://localhost:${PORT}/api`);
-    });
-    startApp();
-}
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📊 Environment: ${process.env.NODE_ENV}`);
+    console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+    console.log(`📚 API Documentation: http://localhost:${PORT}/api`);
+});
 process.on("SIGTERM", () => {
     console.log("SIGTERM received, shutting down gracefully");
     process.exit(0);
