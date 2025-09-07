@@ -121,7 +121,7 @@ try {
   const User = mongoose.models.User || mongoose.model('User', userSchema);
 
   // POST /api/auth/login
-  app.post('/api/auth/me', async (req, res) => {
+  app.post('/api/auth/login', async (req, res) => {
     try {
       await ensureConnected();
       const { email, password, role } = req.body || {};
